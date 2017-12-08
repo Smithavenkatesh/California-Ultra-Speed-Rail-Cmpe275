@@ -29,7 +29,72 @@ import javax.validation.Valid;
 @Controller
 public class LoginController {
 
+    @Autowired
+    private UserService userService;
+
+   
+
+    @RequestMapping("/login")
+    public String login(LoginForm loginForm) {
+        return "/login";
+    }
+
+    
+    @RequestMapping(value="/loginProcess", method = RequestMethod.POST)
+	public ModelAndView userLogin(ModelAndView model,@Valid LoginForm loginForm, BindingResult bindingResult,RedirectAttributes redirectAttrs, HttpServletRequest request,
+			@RequestParam(value = "email", required = true) String email,
+			@RequestParam(value = "password", required = true) String password) {
+	
+		
+		
+		BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(); 
+    	if (bindingResult.hasErrors()) {
+            
+    		model.addObject("nullmsg", "Please fill the form correctly with all the values.");
+			model.setViewName("login");
+       }
+       
+    	 
+		User user = userService.findByEmail(email);
+		if (user == null) {
+
+			model.addObject("errormsg", "Invalid username");
+			model.setViewName("login");
+			
+		} 
+		
+		
+		else if (!(encoder.matches(password, user.getPassword())) && user.getEnabled()) {
+
+			
+			model.addObject("errormsg", "Email or Password is incorrect");
+			model.setViewName("login");
+			
+	
+		} 
+		else if (user!= null && !user.getEnabled()) {
+				
+
+			model.addObject("accountverificationmsg", "Access Denied: Account not verfied yet");
+			model.setViewName("/login");
+				
+		}
+			else if ((encoder.matches(password, user.getPassword())) && user.getEnabled()) {
+				model.addObject("successmsg", "login is successful.");
+				model.setViewName("/welcome");
+				
+			
+  	      	}
+			else {
+		model.addObject("otherwisemsg", "login error,. Please try again later.");
+		model.setViewName("/login");}
+		
+		return model;
+}		
+		
 		
     }
+
+		
 
 		
