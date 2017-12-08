@@ -1,2 +1,2 @@
 # CUSR275
-Final year project for cmpe275
+Final project for cmpe275 - Train Ticketing and Management System
