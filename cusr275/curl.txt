@@ -1,0 +1,22 @@
+curl -X POST \
+  http://localhost:8080/api/sponsor/ \
+  -H 'cache-control: no-cache' \
+  -H 'content-type: application/json' \
+  -H 'postman-token: e4d4c067-df84-9b23-2a2f-8ef32a941a37' \
+  -d '{ "name": "mars", "description": "arun", "street": "renu", "city": "winterfell", "state": "north", "zip": "95113" }'
+
+curl -X POST http://localhost:8080/api/sponsor?name=XX&description=YY&street=ZZ&city=winterfell&state=north&zip=95113
+
+curl -X GET  http://localhost:8080/api/sponsor/6
+
+curl -X PUT http://localhost:8080/api/sponsor/6 
+  -d '{
+  "name": "mars updated",
+  "description": "arun",
+  "street": "renu",
+  "city": "winterfell",
+  "state": "north",
+  "zip": "95113"
+}'
+
+curl -X DELETE http://localhost:8080/api/sponsor/6
