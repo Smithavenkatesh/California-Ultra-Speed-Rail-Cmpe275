@@ -1,0 +1,236 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <!--[if lt IE 7]> <html class="no-js ie6 oldie" lang="en"> <![endif]-->
+    <!--[if IE 7]>    <html class="no-js ie7 oldie" lang="en"> <![endif]-->
+    <!--[if IE 8]>    <html class="no-js ie8 oldie" lang="en"> <![endif]-->
+    <!--[if IE 9]> <html class="no-js ie9 oldie" lang="en"> <![endif]-->
+    <meta charset="utf-8">
+    <!-- Set the viewport width to device width for mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="description" content="Coming soon, Bootstrap, Bootstrap 3.0, Free Coming Soon, free coming soon, free template, coming soon template, Html template, html template, html5, Code lab, codelab, codelab coming soon template, bootstrap coming soon template">
+    <title>Search Trains</title>
+    <!-- ============ Google fonts ============ -->
+    <link href='http://fonts.googleapis.com/css?family=EB+Garamond' rel='stylesheet'
+        type='text/css' />
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,600,700,300,800'
+        rel='stylesheet' type='text/css' />
+    <!-- ============ Add custom CSS here ============ -->
+    <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+      <link href="css/search.css" rel="stylesheet" type="text/css" />    
+   
+    <link href="css/font-awesome.css" rel="stylesheet" type="text/css" />
+
+    <link href="css/clockpicker.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.11.0.min.js"></script>    
+    <script src="js/clockpicker.js"> </script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+    <script src="js/search.js"> </script>
+    <script src="js/authentication.js"> </script>
+</head>
+<body>
+    <div id="custom-bootstrap-menu" class="navbar navbar-default " role="navigation">
+    <div class="container">
+        <div class="navbar-header"><a class="navbar-brand" href="#">TEAM MARS </a>
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-menubuilder"><span class="sr-only">Toggle navigation</span><span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
+            </button>
+        </div>
+        <div class="collapse navbar-collapse navbar-menubuilder">
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="/">Home</a>
+                </li>
+                <li><a href="/products">Cancel Ticket</a>
+                </li>
+                <li><a href="/about-us">Cancel Train</a>
+                </li>
+               
+            </ul>
+        </div>
+    </div>
+</div>
+
+        <div class="container">
+            <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+            <div class="registrationform">
+            <form class="form-horizontal">
+                <fieldset>
+                    <legend>Search Trains<i class="fa fa-search pull-right"></i></legend>
+                     <div class="form-group">
+                     	<div class="row">
+                        <label for="select" class="col control-label">
+                            From</label>
+                        <label for="select" class="col control-label">
+                            To</label>
+                        <label for="select" class="col control-label">
+                            Type</label>
+                        <label for="select" class="col control-label">
+                            Number of Passengers</label>
+
+                        </div>
+
+                        <div class="row">
+                            <select class="form-control col" id="from">
+                                <option>A</option>
+                                <option>B</option>
+                                <option>C</option>
+                                <option>D</option>
+                                <option>E</option>
+                                <option>F</option>
+                                <option>G</option>
+                                <option>H</option>
+                                <option>I</option>
+                                <option>J</option>
+                                <option>K</option>
+                                <option>L</option>
+                                <option>M</option>
+                                <option>N</option>
+                                <option>O</option>
+                                <option>P</option>
+                                <option>Q</option>
+                                <option>R</option>
+                                <option>S</option>
+                                <option>T</option>
+                                <option>U</option>
+                                <option>V</option>
+                                <option>W</option>
+                                <option>X</option>
+                                <option>Y</option>
+                                <option>Z</option>
+                            </select>
+                            <select class="form-control col" id="to">
+                                <option>A</option>
+                                <option>B</option>
+                                <option>C</option>
+                                <option>D</option>
+                                <option>E</option>
+                                <option>F</option>
+                                <option>G</option>
+                                <option>H</option>
+                                <option>I</option>
+                                <option>J</option>
+                                <option>K</option>
+                                <option>L</option>
+                                <option>M</option>
+                                <option>N</option>
+                                <option>O</option>
+                                <option>P</option>
+                                <option>Q</option>
+                                <option>R</option>
+                                <option>S</option>
+                                <option>T</option>
+                                <option>U</option>
+                                <option>V</option>
+                                <option>W</option>
+                                <option>X</option>
+                                <option>Y</option>
+                                <option>Z</option>
+                            </select>
+                           <select class="form-control col" id="type">
+                                <option>Any</option>
+                                <option>Express</option>
+                            </select>
+                            <input type="text" class="form-control" id="numberofpassengers">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                     	<div class="row">
+                        <label for="select" class="col control-label">
+                            Date</label>
+                        <label for="select" class="col control-label">
+                            Time</label>
+                        </div>
+
+                        <div class="row">
+                        	<input type="date" id="date">
+                            <input type="text" id="time" class="form-control clockpicker" value="09:30" />
+                            <script type="text/javascript">
+								$('.clockpicker').clockpicker();
+							</script>
+                             <label>
+                                    <input type="checkbox" id="exacttime">
+                                    Exact Time?
+                                </label>
+                                  <input type="button" onclick="search()" class="btn btn-primary" value="Search"/>
+                                
+                        </div>
+                    </div>
+                    
+                   
+                   
+                   <div class="form-group">
+                        <div class="col-lg-10 col-lg-offset-2">
+                         
+                          
+                        </div>
+                    </div>
+                </fieldset>
+            </form>
+            <div class="searchresults" ng-app="searchresults" ng-cloak ng-controller="myCtrl">
+            	<legend>{{SearchResultsHeading}}</legend>
+            	<div ng-repeat="x in results track by $index"> 
+            		<div class="searchresult">
+		            <div class="row">
+		                        <label for="select" class="col searchheadinglabel">
+		                            Train ID</label>
+		                        <label for="select" class="col searchheadinglabel">
+		                            From</label>
+		                        <label for="select" class="col searchheadinglabel">
+		                            To</label>
+		                        <label for="select" class="col searchheadinglabel">
+		                            Departure Time</label>
+		                        <label for="select" class="col searchheadinglabel">
+		                            Arrival Time</label>
+
+		            </div>
+		            <div class="row">
+		            	        <label for="select" class="col searchlabel">
+		                            {{x.trainId}}</label>
+		                        <label for="select" class="col searchlabel">
+		                            {{x.from}}</label>
+		                        <label for="select" class="col searchlabel">
+		                            {{x.to}}</label>
+		                        <label for="select" class="col searchlabel">
+		                            {{x.deptTime}}</label>
+		                        <label for="select" class="col searchlabel">
+		                            {{x.arrTime}}</label>
+		                         <input type="button" onclick="book()" class="btn btn-primary" value="Book"/>
+		            </div>
+
+		            <div class="row">
+	                        <label for="select" class="col searchheadinglabel">
+	                            Date</label>
+	                        <label for="select" class="col searchheadinglabel">
+	                            Passangers</label>
+	                        <label for="select" class="col searchheadinglabel">
+	                            Price</label>
+	                        <label for="select" class="col searchheadinglabel">
+	                            Type</label>
+	                        <label for="select" class="col searchheadinglabel">
+	                            Duration</label>
+	           		</div>
+	           		<div class="row">
+	                        <label for="select" class="col searchlabel">
+	                            {{x.date}}</label>
+	                        <label for="select" class="col searchlabel">
+	                            {{x.noOfPassengers}}</label>
+	                        <label for="select" class="col searchlabel">
+	                            {{x.rate}}</label>
+	                        <label for="select" class="col searchlabel">
+	                            {{x.trainType}}</label>
+	                        <label for="select" class="col searchlabel">
+	                            {{x.totalDuration}}</label>
+	           		</div>
+	           		</div>
+         	</div>
+         </div>
+		 </div>
+
+        </div>
+        <script src="js/jquery.js" type="text/javascript"></script>
+        <script src="js/bootstrap.min.js" type="text/javascript"></script>
+        
+        </script>
+
+</body>
+</html>
