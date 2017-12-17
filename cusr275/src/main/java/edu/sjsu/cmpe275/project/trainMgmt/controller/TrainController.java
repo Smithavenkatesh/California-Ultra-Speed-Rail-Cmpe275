@@ -17,8 +17,13 @@ import edu.sjsu.cmpe275.project.trainMgmt.util.SearchUtils;
 
 import javax.transaction.Transactional;
 
+import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 
@@ -31,6 +36,8 @@ public class TrainController {
 		@Autowired
 		private ITrainDAO trainDao;
 		
+		public static List<String> expressStops = Arrays.asList("A","F","K","P","U","Z");
+		public static String resultType = "";
 		// Default Constructor
 	    public TrainController() {
 			super();
@@ -47,51 +54,411 @@ public class TrainController {
     			@RequestParam(value= "noOfPassengers", required = false) String noOfPassengers,
     			@RequestParam(value= "exactTime", required = false) String exactTime,
     			@RequestParam(value= "roundTrip", required = false) String roundTrip) throws ParseException{
-   
+			
+			
+			if(trainType.equals("Express")) {
+		        	if (!expressStops.contains(From)||!expressStops.contains(To)) {
+		        		System.out.println("Not express stops");
+		        		return ResponseEntity.notFound().build();
+		        	}
+		        }
+			
 	        List<SearchCriteria> params = new ArrayList<SearchCriteria>();
 	        List<Train> trainList = new ArrayList<Train>();
 	        List<SearchedTrainResult> resultList = new ArrayList<SearchedTrainResult>();
-	        
+	        List<List<SearchedTrainResult>> finalConnectionsList= new ArrayList<List<SearchedTrainResult>>();
 	        
 			params.add(new SearchCriteria("trainType","=",trainType));
 			params.add(new SearchCriteria("From","=",From));
 			params.add(new SearchCriteria("To","=",To));
 			if(trainDeptTime != null)
 				params.add(new SearchCriteria("trainDeptTime","=",trainDeptTime));
-			
+			 
+			finalConnectionsList = findAllSearchCriteria(params,From,To,date,noOfPassengers,exactTime,roundTrip);
+	          
+		        //return ResponseEntity.ok().body(resultList);
 	        
-	        List<SearchCriteria> finalParams = SearchUtils.findAllSearchCriteria(params);
-	        trainList = trainDao.searchTrain(finalParams);
-	        int lenOfListTrains = (10<trainList.size())?10:trainList.size();
-	        
-	        for(int i=0;i<lenOfListTrains;i++)
-	        {
-	        		SearchedTrainResult searchedTrain = new SearchedTrainResult();
-	        		String trainDeptTimeFromPlace = SearchUtils.getCorrectTime(trainList.get(i).getTrainStartTime(),SearchUtils.totalDurationFromStartAndFP,true);
-	        		String trainArrTimeToPlace = SearchUtils.getCorrectTime(trainDeptTimeFromPlace,SearchUtils.totalDurationInMinutes,true);
-	        		int noOfStn = SearchUtils.totalNoOfStnsToTravel;
-	        		
-	        		searchedTrain.setTrainId(trainList.get(i).getTrainID());
-	        		searchedTrain.setDeptTime(trainDeptTimeFromPlace);
-	        		searchedTrain.setArrTime(trainArrTimeToPlace);
-	        		searchedTrain.setFrom(From);
-	        		searchedTrain.setTo(To );
-	        		searchedTrain.setDate(date);
-	        		searchedTrain.setTrainType(SearchUtils.trainTypeValue);
-	        		searchedTrain.setTotalDuration(SearchUtils.totalDurationInMinutes);
-	        		searchedTrain.setNoOfPassengers(noOfPassengers);
-	        		searchedTrain.setRate(SearchUtils.findRate(noOfStn,trainType));
-	        		resultList.add(searchedTrain);
-	        		
-	        }
-	        return ResponseEntity.ok().body(resultList);
+			 ModelMap map = new ModelMap();
+			 map.addAttribute("resultType",resultType);
+			 map.addAttribute("transactionFee",1);
+			 ModelMap finalMap = new ModelMap();
+			 String successMessage = "Successfully Registered";
+			 System.out.println(trainType);
+			 //map.addAttribute("Connections", finalConnectionsList);
+			 
+			 if(resultType.equals("combined"))
+			 {
+				for(int i=0;i<finalConnectionsList.size();i++)
+	    		{
+					if(i<=4)
+					{
+						ModelMap map2 = new ModelMap();
+						map2.addAttribute("numOfConnections",finalConnectionsList.get(i).size());
+						map2.addAttribute("TrainID","Multiple");
+						map2.addAttribute("deptTime",finalConnectionsList.get(i).get(0).getDeptTime());
+						map2.addAttribute("arrTime",finalConnectionsList.get(i).get(1).getArrTime());
+						map2.addAttribute("date",finalConnectionsList.get(i).get(0).getDate());
+						map2.addAttribute("from",finalConnectionsList.get(i).get(0).getFrom());
+						map2.addAttribute("to",finalConnectionsList.get(i).get(1).getTo());
+						map2.addAttribute("noOfPassengers",finalConnectionsList.get(i).get(0).getNoOfPassengers());
+						map2.addAttribute("trainType","combined"); 
+						map2.addAttribute("rate",finalConnectionsList.get(i).get(0).getRate() + finalConnectionsList.get(i).get(1).getRate() + 1);
+						map2.addAttribute("connections",finalConnectionsList.get(i));
+						
+						System.out.println(i);
+						finalMap.addAttribute(Integer.toString(i),map2);
+					}
+					else
+					{
+					 	 finalMap.addAttribute("regular",finalConnectionsList.get(i));
+					}
+	    		}
+				
+				map.addAttribute("results",finalMap);
+			 }
+			 else
+			 {
+				 for(int i=0;i<finalConnectionsList.size();i++)
+		    		{
+						map.addAttribute("results",finalConnectionsList.get(i));
+					}
+			 }
+			 
+			 return ResponseEntity.ok().body(map);
 	    }
 		
+		
+		public List<List<SearchedTrainResult>> findAllSearchCriteria(List<SearchCriteria> params,
+				String From,
+				String To,
+				String date,
+				String noOfPassengers,
+				String exactTime,
+				String roundTrip
+				) throws ParseException{
+			List<SearchCriteria> finalParams = new ArrayList<SearchCriteria>();
+			int totalDurationInMinutes = 0, totalDurationFromStartAndFP = 0,totalNoOfStnsToTravel=0; 
+			Character fromPlace = null,toPlace = null;
+			String givenTrainTypeValue = "", trainTypeValue="";
+			String givenFromPlaceDeptTime="", direction="", finalStartDeptTime="";
+			Character givenFromPlace = null, givenToPlace = null;
+			int noOfStnsFromStartAndFP = 0, noOfStopsFromStartAndFP = 0, totalNoOfStopsToTravel=0;
+			List<SearchedTrainResult> resultList = new ArrayList<SearchedTrainResult>();
+			Character previousExpressStation = null;
+			Character nextExpressStation = null;
+			List<List<SearchedTrainResult>> connectionsList= new ArrayList<List<SearchedTrainResult>>();
+			
+			for (final SearchCriteria param : params) 
+			 {
+				 if (param.getKey().equals("From"))
+					{
+						String temp = ((String) param.getValue()).toUpperCase();
+						fromPlace = (Character) temp.charAt(0);
+					}
+				 else if (param.getKey().equals("To"))
+					{
+					 	String temp = ((String) param.getValue()).toUpperCase();
+					 	toPlace = (Character) temp.charAt(0);
+					}
+				 else if (param.getKey().equals("trainDeptTime")) 
+				 	{
+					 	givenFromPlaceDeptTime = (String)param.getValue();	 
+				 	}
+				 else if (param.getKey().equals("trainType")) 
+					 trainTypeValue = (String) param.getValue();
+					 
+					// Have to implement no of Passengers, roundtrip, exact time still
+				 else
+					 finalParams.add(new SearchCriteria(param.getKey(),param.getOperation(),param.getValue())); 
+			 }
+			 
+			 	           
+	           if(fromPlace != null && toPlace != null)
+				{
+	        	   resultType = "notcombined";
+	        	   switch(trainTypeValue) {
+			        	    
+			        	    case "Any":
+			        	    	//Can be only express or only regular or both based on origin and destination
+			        	    	
+			        	    	//Both start and end are express stations. So the results should contain individual express and trains without combinations
+			        	    	if(expressStops.contains(From) && expressStops.contains(To))
+			        	    	{
+			        	    		direction = findDirection(fromPlace,toPlace);
+			        	    		//find only express and add to result
+			        	    		resultList = findTrainDetailsByType(direction,toPlace,fromPlace,"Express",givenFromPlaceDeptTime,finalParams,resultList,Character.toString(fromPlace),Character.toString(toPlace),date, noOfPassengers,5);
+			        	    		finalParams.clear();
+			        	    		//find only regular and add to result
+			        	    		resultList = findTrainDetailsByType(direction,toPlace,fromPlace,"Regular",givenFromPlaceDeptTime,finalParams,resultList,Character.toString(fromPlace),Character.toString(toPlace),date, noOfPassengers,5);
+			        	    		connectionsList.add(resultList);
+			        	    	}
+			        	    	
+			        	    	//only one station is express.
+			        	    	else if(expressStops.contains(From) || expressStops.contains(To))
+			        	    	{
+			        	    		resultType = "combined";
+			        	    		Boolean ReverseCovered = false;
+			        	    		//starting station is express. 
+			        	    		//find last Express station before destination.
+			        	    		if(expressStops.contains(From))
+			        	    		{
+			        	    			previousExpressStation = findPreviousExpressStation(toPlace);
+			        	    			if(previousExpressStation==fromPlace)
+			        	    			{
+			        	    				previousExpressStation = findNextExpressStation(toPlace);
+			        	    				ReverseCovered = true;
+			        	    			}
+			        	    			direction = findDirection(fromPlace,previousExpressStation);
+			        	    			resultList = findTrainDetailsByType(direction,previousExpressStation,fromPlace,"Express",givenFromPlaceDeptTime,finalParams,resultList,Character.toString(fromPlace),Character.toString(previousExpressStation),date, noOfPassengers,4);
+				        	    		finalParams.clear();
+				        	    		for(int i=0;i<resultList.size();i++)
+				        	    		{
+				        	    			List<SearchedTrainResult> individualConnections = new ArrayList<SearchedTrainResult>();
+				        	    			List<SearchedTrainResult> resultList2 = new ArrayList<SearchedTrainResult>();
+				        	    			direction = findDirection(previousExpressStation,toPlace);
+				        	    			resultList2 = findTrainDetailsByType(direction,toPlace,previousExpressStation,"Regular",resultList.get(i).getArrTime(),finalParams,resultList2,Character.toString(previousExpressStation),Character.toString(toPlace),date, noOfPassengers,1);
+				        	    			finalParams.clear();
+				        	    			individualConnections.add(resultList.get(i));
+				        	    			individualConnections.add(resultList2.get(0));
+				        	    			connectionsList.add(individualConnections);
+				        	    		}
+				        	    		
+				        	    		if(!ReverseCovered)
+				        	    		{
+				        	    			ReverseCovered = false;
+				        	    			previousExpressStation = findNextExpressStation(toPlace);
+				        	    			direction = findDirection(fromPlace,previousExpressStation);
+				        	    			resultList.clear();
+				        	    			resultList = findTrainDetailsByType(direction,previousExpressStation,fromPlace,"Express",givenFromPlaceDeptTime,finalParams,resultList,Character.toString(fromPlace),Character.toString(previousExpressStation),date, noOfPassengers,1);
+					        	    		finalParams.clear();
+					        	    		for(int i=0;i<resultList.size();i++)
+					        	    		{
+					        	    			List<SearchedTrainResult> individualConnections = new ArrayList<SearchedTrainResult>();
+					        	    			List<SearchedTrainResult> resultList2 = new ArrayList<SearchedTrainResult>();
+					        	    			direction = findDirection(previousExpressStation,toPlace);
+					        	    			resultList2.clear();
+					        	    			resultList2 = findTrainDetailsByType(direction,toPlace,previousExpressStation,"Regular",resultList.get(i).getArrTime(),finalParams,resultList2,Character.toString(previousExpressStation),Character.toString(toPlace),date, noOfPassengers,1);
+					        	    			finalParams.clear();
+					        	    			individualConnections.add(resultList.get(i));
+					        	    			individualConnections.add(resultList2.get(0));
+					        	    			connectionsList.add(individualConnections);
+					        	    		}
+				        	    		}
+			        	    		}
+			        	    		//Ending station is express. 
+			        	    		//find Next Express station after start.
+			        	    		else
+			        	    		{
+			        	    			nextExpressStation = findNextExpressStation(fromPlace);
+			        	    			direction = findDirection(fromPlace,nextExpressStation);
+			        	    			resultList = findTrainDetailsByType(direction,nextExpressStation,fromPlace,"Regular",givenFromPlaceDeptTime,finalParams,resultList,Character.toString(fromPlace),Character.toString(nextExpressStation),date, noOfPassengers,5);
+				        	    		finalParams.clear();
+				        	    		for(int i=0;i<resultList.size();i++)
+				        	    		{
+				        	    			List<SearchedTrainResult> individualConnections = new ArrayList<SearchedTrainResult>();
+				        	    			List<SearchedTrainResult> resultList2 = new ArrayList<SearchedTrainResult>();
+				        	    			direction = findDirection(nextExpressStation,toPlace);
+				        	    			resultList2 = findTrainDetailsByType(direction,toPlace,nextExpressStation,"Express",resultList.get(i).getArrTime(),finalParams,resultList2,Character.toString(nextExpressStation),Character.toString(toPlace),date, noOfPassengers,1);
+				        	    			finalParams.clear();
+				        	    			individualConnections.add(resultList.get(i));
+				        	    			individualConnections.add(resultList2.get(0));
+				        	    			connectionsList.add(individualConnections);
+				        	    		}
+				        	    		
+			        	    		}
+			        	    		resultType = "not combined";
+			        	    		resultList.clear();
+			        	    		direction = findDirection(fromPlace,toPlace);
+			        	    		resultList = findTrainDetailsByType(direction,toPlace,fromPlace,"Regular",givenFromPlaceDeptTime,finalParams,resultList,Character.toString(fromPlace),Character.toString(toPlace),date, noOfPassengers,5);
+			        	    		resultType = "combined";
+			        	    		connectionsList.add(resultList);
+			        	    	}
+			        	    	
+			        	    	
+			        		   break;
+			        	    default:
+			        	    		//User selected either express or regular so give only that
+			        	    		direction = findDirection(fromPlace,toPlace);
+			        	    		resultList = findTrainDetailsByType(direction,toPlace,fromPlace,trainTypeValue,givenFromPlaceDeptTime,finalParams,resultList,Character.toString(fromPlace),Character.toString(toPlace),date, noOfPassengers,5);
+			        	    		connectionsList.add(resultList);
+						}
+				}
+	           return connectionsList;
+		}
+		
+		public List<SearchedTrainResult> findTrainDetailsByType(String direction,Character toPlace,Character fromPlace,String trainTypeValue,String givenFromPlaceDeptTime
+				,List<SearchCriteria> finalParams,List<SearchedTrainResult> resultList,String From, String To, String date, String noOfPassengers, int resLength) throws ParseException{
+				int totalDurationInMinutes = 0, totalDurationFromStartAndFP = 0,totalNoOfStnsToTravel=0; 
+				String finalStartDeptTime="";
+				int noOfStnsFromStartAndFP = 0, noOfStopsFromStartAndFP = 0, totalNoOfStopsToTravel=0;
+				 
+				finalParams.add(new SearchCriteria("trainType","=",trainTypeValue));
+				if(direction.equals("SB"))
+				{
+		         		totalNoOfStnsToTravel = noOfStations(toPlace,fromPlace);
+		         	    totalNoOfStopsToTravel = noOfStops(totalNoOfStnsToTravel, trainTypeValue);
+				        totalDurationInMinutes =  duration(totalNoOfStnsToTravel,totalNoOfStopsToTravel);
+				        noOfStnsFromStartAndFP = noOfStations(fromPlace,'A');
+		         		finalParams.add(new SearchCriteria("trainID","=","SB"));
+		        }
+		         
+		        if(direction.equals("NB")) 
+		        {
+		         		totalNoOfStnsToTravel = noOfStations(fromPlace,toPlace);
+				        totalNoOfStopsToTravel = noOfStops(totalNoOfStnsToTravel, trainTypeValue);
+				        totalDurationInMinutes =  duration(totalNoOfStnsToTravel,totalNoOfStopsToTravel);
+		         		noOfStnsFromStartAndFP = noOfStations('Z',fromPlace);
+		         		finalParams.add(new SearchCriteria("trainID","=","NB"));
+		         }
+		         
+		        noOfStopsFromStartAndFP = noOfStops(noOfStnsFromStartAndFP, trainTypeValue);
+		        totalDurationFromStartAndFP = duration(noOfStnsFromStartAndFP,noOfStopsFromStartAndFP);
+				finalStartDeptTime = getCorrectTime(givenFromPlaceDeptTime,totalDurationFromStartAndFP,false);
+		 		finalParams.add(new SearchCriteria("trainStartTime",">",finalStartDeptTime));
+		 		resultList = addToResultSet(finalParams,resultList,totalDurationFromStartAndFP,totalDurationInMinutes,totalNoOfStnsToTravel,From,To,date, noOfPassengers,resLength);
+		 		return resultList;
+		}
+		
+		public List<SearchedTrainResult> addToResultSet(List<SearchCriteria> finalParams,List<SearchedTrainResult> resultList,int totalDurationFromStartAndFP,int totalDurationInMinutes,
+				int totalNoOfStnsToTravel, String From, String To, String date, String noOfPassengers,int resLength) throws ParseException{      
+	           
+	           	List<Train> trainList = new ArrayList<Train>();
+	           	trainList = trainDao.searchTrain(finalParams);
+		        int lenOfListTrains = (resLength<trainList.size())?resLength:trainList.size();
+		        
+		        for(int i=0;i<lenOfListTrains;i++)
+		        {
+		        		SearchedTrainResult searchedTrain = new SearchedTrainResult();
+		        		String trainDeptTimeFromPlace = getCorrectTime(trainList.get(i).getTrainStartTime(),totalDurationFromStartAndFP,true);
+		        		String trainArrTimeToPlace = getCorrectTime(trainDeptTimeFromPlace,totalDurationInMinutes,true);
+		        		int noOfStn = totalNoOfStnsToTravel;
+		        		
+		        		searchedTrain.setTrainId(trainList.get(i).getTrainID());
+		        		searchedTrain.setDeptTime(trainDeptTimeFromPlace);
+		        		searchedTrain.setArrTime(trainArrTimeToPlace);
+		        		searchedTrain.setFrom(From);
+		        		searchedTrain.setTo(To );
+		        		searchedTrain.setDate(date);
+		        		searchedTrain.setTrainType(trainList.get(i).getTrainType());
+		        		searchedTrain.setTotalDuration(totalDurationInMinutes);
+		        		searchedTrain.setNoOfPassengers(noOfPassengers);
+		        		searchedTrain.setRate(findRate(noOfStn,trainList.get(i).getTrainType()));
+		        		resultList.add(searchedTrain);
+		        }   
+			  return resultList;
+			}
+		
+		//Time helper function to get correct time (Departure time
+	    public static String getCorrectTime(String givenFromPlaceDeptTime, int TimeCalcInMinutes, boolean fromTrainController) throws ParseException {
+	    		DateFormat sdf = new SimpleDateFormat("HH:mm");
+	        Date date = sdf.parse(givenFromPlaceDeptTime);
+	        Calendar cal = Calendar.getInstance();
+	        cal.setTime(date);
+
+	        if(fromTrainController) {
+	        		cal.add(Calendar.MINUTE, TimeCalcInMinutes);
+	        		date = cal.getTime();
+	        }
+	        else {
+	        	cal.add(Calendar.MINUTE, -TimeCalcInMinutes);
+	    		date = cal.getTime();
+	        }
+	        
+	        String strDateFormat = "HH:mm";//HH --> means 24 hour format
+	        DateFormat dateFormat = new SimpleDateFormat(strDateFormat);
+	        String formattedDate= dateFormat.format(date);
+	        return formattedDate;
+	       
+	    }
+	    
+	 // To check south bound or north bound. If fromPlace is less than toPlace then its SB
+	    public static String findDirection(Character fromPlace,Character toPlace)
+	    {
+	    		String result="";
+	        	 if(fromPlace != null && toPlace != null)
+				 {
+					 if ((int)fromPlace < ((int)toPlace))
+						 result = "SB";
+					 else
+						 result = "NB";			 
+				 }
+	        	 return result;
+	    }
+	    
+	    // Find number of stations between two places
+	    public static int noOfStations(Character PlaceA,Character PlaceB) {
+		    	int noOfStns = ((int)PlaceA - (int)PlaceB);
+		    	return noOfStns; 
+	    }
+	    
+	 // Find number of stops between two places
+	    public static int noOfStops(int noOfStns, String trainTypeValue) {
+		    	int noOfStops=0;
+		    	if(trainTypeValue.equals("Express"))
+		    		noOfStops =  (int) Math.ceil((double)noOfStns/5)-1;
+		    	if(trainTypeValue.equals("Regular"))
+		    		noOfStops = noOfStns-1;
+		    	noOfStops = noOfStops<=0? 0 : noOfStops;
+		    	return noOfStops;
+	    }
+	    
+	    public Character findPreviousExpressStation(Character To)
+	    {
+	    	List<Character> expressStopsChars = Arrays.asList('A','F','K','P','U','Z');
+	    	int station  = (int) To - 64;
+	    	int prevExpStation = ((int) Math.ceil((double)station/5))-1;
+	    	return expressStopsChars.get(prevExpStation);
+	    }
+	    
+	    public Character findNextExpressStation(Character From)
+	    {
+	    	List<Character> expressStopsChars = Arrays.asList('A','F','K','P','U','Z');
+	    	int station  = (int) From - 64;
+	    	System.out.println(station);
+	    	int nextExpStation = ((int) Math.ceil((double)station/5));
+	    	System.out.println(nextExpStation);
+	    	return expressStopsChars.get(nextExpStation);
+	    }
+	    
+	    // Find time duration between two places
+	    public static int duration(int noOfStns, int noOfStops) {
+		    	int duration = (noOfStns*5) + (noOfStops*3);
+		    	return duration;
+	    }
+	    
+	    // Calculate the rate to travel
+	    public static long findRate(int noOfStns, String trainTypeValue)
+	    {
+	    		long rate = 0;
+	    		if(noOfStns <= 5) {
+	    			if(trainTypeValue.equals("Express")) 
+	    				rate = (long) (2);//1 is the transaction fee
+	    			else if(trainTypeValue.equals("Regular"))
+	    				rate = (long) (1);//1 is the transaction fee
+	    			}	
+	    		else {
+	    			noOfStns = ((int) Math.ceil((double)noOfStns/5));
+	    			if(trainTypeValue.equals("Express")) 
+	    				rate = (long) ((noOfStns*2));//1 is the transaction fee
+	    			else if(trainTypeValue.equals("Regular"))
+	    				rate = (long) ((noOfStns*1));//1 is the transaction fee
+	    		}
+	    		rate = resultType.equals("combined")? rate : rate+1;
+	    		return rate;
+	    	}
+	    
+	    //Find Express Stops or not
+	    public static boolean findIfExpressStop(Character PlaceA) {
+	    		if((int)PlaceA % 5 == 0)
+				return true;
+		
+			return false;
+	    }
+
 	}
-	    
-	    
 
-
+		
+	
 	    
 	    
 
