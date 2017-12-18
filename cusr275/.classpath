@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path="cusr275/src/main/java"/>
+	<classpathentry kind="lib" path="__MACOSX/cusr275/.mvn/wrapper/._maven-wrapper.jar"/>
+	<classpathentry kind="lib" path="cusr275/.mvn/wrapper/maven-wrapper.jar"/>
+	<classpathentry kind="output" path="cusr275/target/classes"/>
+</classpath>
